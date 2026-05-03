@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Commerce Governance Simulator</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+Pro:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- React + Babel from CDN (Babel compiles JSX in the browser) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    html, body, #root { margin: 0; padding: 0; }
+    body { background: #F7F6F3; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useMemo } = React;
+
+    function GovernanceSimulator() {
+      const [monetization, setMonetization] = useState(1);
+      const [disclosure, setDisclosure] = useState("sponsored");
+      const [synthetic, setSynthetic] = useState(15);
+
+      const monetLabels = ["Low", "Medium", "High"];
+
+      const { trust, revenue, roi, interpretation } = useMemo(() => {
+        const m = monetization;
+        const s = synthetic / 100;
+
+        const disclosurePenalty =
+          disclosure === "none" ? 0 : disclosure === "sponsored" ? 14 : 6;
+        const disclosureLegitimacy =
+          disclosure === "full" ? 8 : disclosure === "sponsored" ? 3 : 0;
+
+        let trustRaw =
+          95 - m * 12 - disclosurePenalty - s * 90 + disclosureLegitimacy;
+        if (disclosure === "none") trustRaw -= m * 6;
+        const trustScore = Math.max(0, Math.min(100, Math.round(trustRaw)));
+
+        const monetGain = 30 + m * 25;
+        const trustMultiplier = 0.4 + (trustScore / 100) * 0.8;
+        const revenueIndex = Math.max(
+          0,
+          Math.min(100, Math.round(monetGain * trustMultiplier))
+        );
+
+        const syntheticPenalty = s * 110;
+        const roiBase = 70 + m * 4;
+        const roiRaw = roiBase - syntheticPenalty + (trustScore - 50) * 0.4;
+        const roiIndex = Math.max(0, Math.min(100, Math.round(roiRaw)));
+
+        let interp;
+        if (trustScore < 40 && monetization === 2) {
+          interp = "High monetization with visible sponsorship reduces trust, limiting long-term revenue.";
+        } else if (synthetic > 30) {
+          interp = "Synthetic engagement inflates surface metrics but erodes brand ROI as conversions fail to follow.";
+        } else if (disclosure === "none" && monetization >= 1) {
+          interp = "Undisclosed monetization carries latent risk: trust holds until discovery, then collapses.";
+        } else if (disclosure === "full" && trustScore > 70) {
+          interp = "Full disclosure converts transparency into legitimacy, sustaining trust at moderate revenue.";
+        } else if (monetization === 0 && trustScore > 80) {
+          interp = "Low monetization preserves trust but leaves platform revenue thin — a defensible but slow posture.";
+        } else if (roiIndex < 40) {
+          interp = "Brand ROI is compressed: advertisers will reprice or exit if conditions persist.";
+        } else {
+          interp = "A balanced posture — modest revenue capture without overdrawing on user trust.";
+        }
+
+        return { trust: trustScore, revenue: revenueIndex, roi: roiIndex, interpretation: interp };
+      }, [monetization, disclosure, synthetic]);
+
+      const c = {
+        bg: "#F7F6F3", panel: "#FFFFFF", ink: "#0F1620", text: "#2A323D",
+        muted: "#6A7280", border: "#E2E0DA", borderStrong: "#C9C6BD",
+        accent: "#1F3A5F", good: "#2F6B4F", warn: "#A77C1F", poor: "#9A3324",
+      };
+      const sans = `"Inter", "Helvetica Neue", Arial, sans-serif`;
+      const serif = `"Source Serif Pro", Georgia, serif`;
+      const mono = `"JetBrains Mono", ui-monospace, monospace`;
+
+      return (
+        <div style={{ minHeight: "100vh", background: c.bg, color: c.text, fontFamily: sans, padding: "32px 24px 56px", boxSizing: "border-box" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+            <header style={{ borderBottom: `2px solid ${c.ink}`, paddingBottom: 16, marginBottom: 28 }}>
+              <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: c.muted, marginBottom: 8 }}>
+                Working Paper · Governance Simulation
+              </div>
+              <h1 style={{ fontFamily: serif, fontWeight: 700, fontSize: 30, lineHeight: 1.2, margin: 0, color: c.ink, letterSpacing: "-0.01em" }}>
+                AI Commerce Governance Simulator
+              </h1>
+              <p style={{ fontFamily: serif, fontSize: 15, color: c.muted, marginTop: 8, maxWidth: 720, lineHeight: 1.5 }}>
+                A stylized model of the tradeoffs between monetization, transparency, and trust in AI-mediated commerce. Adjust the parameters to observe the resulting effect on platform and brand outcomes.
+              </p>
+            </header>
+
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(320px, 1fr) minmax(420px, 1.4fr)", gap: 24, alignItems: "start" }}>
+              {/* INPUTS */}
+              <section style={panelStyle(c)}>
+                <PanelHeader number="01" title="Parameters" subtitle="User-controlled inputs" c={c} mono={mono} serif={serif} />
+                <div style={{ padding: "20px 24px" }}>
+                  <FieldGroup label="Monetization Level" description="Density of paid placements and commerce hooks." c={c} sans={sans}>
+                    <input type="range" min={0} max={2} step={1} value={monetization} onChange={(e) => setMonetization(Number(e.target.value))}
+                      style={{ width: "100%", accentColor: c.accent, cursor: "pointer" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontFamily: mono, fontSize: 11, color: c.muted }}>
+                      {monetLabels.map((l, i) => (
+                        <span key={l} style={{ color: i === monetization ? c.ink : c.muted, fontWeight: i === monetization ? 600 : 400 }}>{l}</span>
+                      ))}
+                    </div>
+                  </FieldGroup>
+
+                  <FieldGroup label="Disclosure Type" description="How sponsorship is communicated to the user." c={c} sans={sans}>
+                    <select value={disclosure} onChange={(e) => setDisclosure(e.target.value)}
+                      style={{ width: "100%", padding: "10px 12px", fontFamily: sans, fontSize: 14, color: c.ink, background: "#fff", border: `1px solid ${c.borderStrong}`, borderRadius: 4, cursor: "pointer", outline: "none" }}>
+                      <option value="none">None</option>
+                      <option value="sponsored">Sponsored label</option>
+                      <option value="full">Full explanation</option>
+                    </select>
+                  </FieldGroup>
+
+                  <FieldGroup label="Synthetic Engagement Rate" description="Share of interactions generated by non-human agents." c={c} sans={sans}
+                    rightAdornment={<span style={{ fontFamily: mono, fontSize: 13, color: c.ink, fontWeight: 500 }}>{synthetic}%</span>}>
+                    <input type="range" min={0} max={50} step={1} value={synthetic} onChange={(e) => setSynthetic(Number(e.target.value))}
+                      style={{ width: "100%", accentColor: c.accent, cursor: "pointer" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontFamily: mono, fontSize: 11, color: c.muted }}>
+                      <span>0%</span><span>25%</span><span>50%</span>
+                    </div>
+                  </FieldGroup>
+                </div>
+              </section>
+
+              {/* OUTPUTS */}
+              <section style={panelStyle(c)}>
+                <PanelHeader number="02" title="Outcomes" subtitle="Modeled indices, 0–100" c={c} mono={mono} serif={serif} />
+                <div style={{ padding: "8px 24px 20px" }}>
+                  <Metric label="Trust Score" description="Aggregate user confidence in platform recommendations." value={trust} c={c} sans={sans} serif={serif} mono={mono}
+                    tone={trust >= 70 ? "good" : trust >= 45 ? "warn" : "poor"} />
+                  <Metric label="Platform Revenue Index" description="Net revenue capture, weighted by retained trust." value={revenue} c={c} sans={sans} serif={serif} mono={mono}
+                    tone={revenue >= 60 ? "good" : revenue >= 35 ? "warn" : "poor"} />
+                  <Metric label="Brand ROI Index" description="Advertiser return after synthetic engagement losses." value={roi} c={c} sans={sans} serif={serif} mono={mono}
+                    tone={roi >= 60 ? "good" : roi >= 35 ? "warn" : "poor"} last />
+                </div>
+              </section>
+            </div>
+
+            <section style={{ ...panelStyle(c), marginTop: 24, borderLeft: `3px solid ${c.accent}` }}>
+              <div style={{ padding: "18px 24px" }}>
+                <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: c.muted, marginBottom: 8 }}>
+                  Interpretation
+                </div>
+                <p style={{ fontFamily: serif, fontSize: 17, lineHeight: 1.5, color: c.ink, margin: 0 }}>{interpretation}</p>
+              </div>
+            </section>
+
+            <footer style={{ marginTop: 24, paddingTop: 16, borderTop: `1px solid ${c.border}`, fontFamily: sans, fontSize: 12, color: c.muted, lineHeight: 1.5 }}>
+              <strong style={{ color: c.text }}>Note.</strong> Coefficients are illustrative and not derived from empirical data. The model is intended to make tradeoff structure visible, not to forecast outcomes.
+            </footer>
+          </div>
+        </div>
+      );
+    }
+
+    function panelStyle(c) {
+      return { background: c.panel, border: `1px solid ${c.border}`, borderRadius: 6 };
+    }
+
+    function PanelHeader({ number, title, subtitle, c, mono, serif }) {
+      return (
+        <div style={{ padding: "14px 24px", borderBottom: `1px solid ${c.border}`, background: "#FAFAF7", borderTopLeftRadius: 6, borderTopRightRadius: 6, display: "flex", alignItems: "baseline", gap: 12 }}>
+          <span style={{ fontFamily: mono, fontSize: 11, color: c.muted, letterSpacing: "0.05em" }}>{number}</span>
+          <h2 style={{ fontFamily: serif, fontSize: 16, fontWeight: 600, color: c.ink, margin: 0, letterSpacing: "-0.005em" }}>{title}</h2>
+          <span style={{ fontFamily: mono, fontSize: 11, color: c.muted, letterSpacing: "0.04em", marginLeft: "auto" }}>{subtitle}</span>
+        </div>
+      );
+    }
+
+    function FieldGroup({ label, description, children, c, sans, rightAdornment }) {
+      return (
+        <div style={{ marginBottom: 22, paddingBottom: 22, borderBottom: `1px dashed ${c.border}` }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+            <label style={{ fontFamily: sans, fontSize: 13, fontWeight: 600, color: c.ink, letterSpacing: "0.01em" }}>{label}</label>
+            {rightAdornment}
+          </div>
+          <p style={{ fontFamily: sans, fontSize: 12, color: c.muted, margin: "0 0 12px", lineHeight: 1.45 }}>{description}</p>
+          {children}
+        </div>
+      );
+    }
+
+    function Metric({ label, description, value, c, sans, serif, mono, tone, last }) {
+      const toneColor = tone === "good" ? c.good : tone === "warn" ? c.warn : c.poor;
+      const toneLabel = tone === "good" ? "Healthy" : tone === "warn" ? "Caution" : "At Risk";
+      return (
+        <div style={{ padding: "18px 0", borderBottom: last ? "none" : `1px solid ${c.border}` }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+            <span style={{ fontFamily: sans, fontSize: 13, fontWeight: 600, color: c.ink }}>{label}</span>
+            <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: toneColor, background: `${toneColor}14`, padding: "3px 8px", borderRadius: 3, fontWeight: 500 }}>{toneLabel}</span>
+          </div>
+          <p style={{ fontFamily: sans, fontSize: 12, color: c.muted, margin: "0 0 10px" }}>{description}</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span style={{ fontFamily: serif, fontSize: 36, fontWeight: 700, color: c.ink, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", minWidth: 64, transition: "color 0.3s ease" }}>
+              {value}
+              <span style={{ fontSize: 14, fontWeight: 400, color: c.muted, marginLeft: 4, fontFamily: mono }}>/100</span>
+            </span>
+            <div style={{ flex: 1 }}>
+              <div style={{ height: 6, background: c.border, borderRadius: 3, overflow: "hidden", position: "relative" }}>
+                <div style={{ height: "100%", width: `${value}%`, background: toneColor, transition: "width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease", borderRadius: 3 }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<GovernanceSimulator />);
+  </script>
+</body>
+</html>
