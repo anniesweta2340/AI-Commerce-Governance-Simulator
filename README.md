@@ -1,6 +1,6 @@
-# AI-Commerce-Governance-Simulator
+# AI-Commerce-Tradeoff-Simulator
 Digital Marketplaces
-# AI Commerce Governance Simulator
+# AI Commerce Tradeoff Simulator
 
 A stylized model of the tradeoffs between monetization, transparency, and trust in AI-mediated commerce. Adjust three parameters — monetization level, disclosure type, and synthetic engagement rate — to observe effects on user trust, platform revenue, and brand ROI.
 
